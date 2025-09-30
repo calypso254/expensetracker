@@ -262,7 +262,8 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            if (SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbxcDJJ7ZPqfVnwTc6yh1HXDSVibS3MsBThniNG5FKMSYgBnzcOx9NRGvjAQQRejP_xR/exec') {
+            // *** THIS IS THE CORRECTED LINE ***
+            if (SCRIPT_URL === 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
                 showMessage('Error: Please configure the SCRIPT_URL in the HTML file.', 'error');
                 return;
             }
@@ -352,6 +353,4 @@
     </script>
 </body>
 </html>
-
-
 
