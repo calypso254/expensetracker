@@ -50,7 +50,7 @@
             <form id="expense-form">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                    <!-- Business -->
+                    <!-- Business / Account -->
                     <div>
                         <label for="business" class="block text-sm font-medium text-gray-700 mb-1">Business / Account</label>
                         <select id="business" name="business" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
@@ -113,6 +113,13 @@
                             <option>Other</option>
                         </select>
                     </div>
+                    
+                    <!-- Project -->
+                    <div class="md:col-span-2">
+                        <label for="project" class="block text-sm font-medium text-gray-700 mb-1">Project (Optional)</label>
+                        <input list="projects-list" id="project" name="project" placeholder="e.g., Hidden Hollow, Q4 Marketing Campaign" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <datalist id="projects-list"></datalist>
+                    </div>
 
                     <!-- Payment Method -->
                     <div class="md:col-span-2">
@@ -165,7 +172,7 @@
     <script>
         // --- CONFIGURATION ---
         // IMPORTANT: Replace with your actual Google Apps Script Web App URL
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcDJJ7ZPqfVnwTc6yh1HXDSVibS3MsBThniNG5FKMSYgBnzcOx9NRGvjAQQRejP_xR/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHdTxGaUKRZ_2VrZrZejK04v9O6lzuoTlsBuqhOrOBqKs6K0zCDcym1eSO8gkk_Fs-/exec';
         // --- END CONFIGURATION ---
 
         const form = document.getElementById('expense-form');
@@ -180,8 +187,12 @@
         const businessSelect = document.getElementById('business');
         const ownerContributionContainer = document.getElementById('owner-contribution-container');
         const ownerContributionCheckbox = document.getElementById('owner-contribution');
-        
+        const projectInput = document.getElementById('project');
+        const projectsDatalist = document.getElementById('projects-list');
+
         const PAYMENT_METHODS_KEY = 'businessExpenseTrackerPaymentMethods';
+        const PROJECTS_KEY = 'businessExpenseTrackerProjects';
+
 
         // --- UI Logic ---
         const handleBusinessChange = () => {
@@ -196,44 +207,42 @@
         businessSelect.addEventListener('change', handleBusinessChange);
 
 
-        // --- Payment Method Management ---
-        const getPaymentMethods = () => {
-            return JSON.parse(localStorage.getItem(PAYMENT_METHODS_KEY)) || [
-                'PenGems Expense Debit 3776', 
-                'Personal Discover Debit 4924'
-            ];
+        // --- Local Storage Management ---
+        const getFromStorage = (key, defaults = []) => {
+            return JSON.parse(localStorage.getItem(key)) || defaults;
         };
 
-        const savePaymentMethods = (methods) => {
-            localStorage.setItem(PAYMENT_METHODS_KEY, JSON.stringify(methods));
+        const saveToStorage = (key, data) => {
+            localStorage.setItem(key, JSON.stringify(data));
         };
-
-        const populatePaymentMethods = () => {
-            const methods = getPaymentMethods();
-            paymentMethodsDatalist.innerHTML = '';
-            methods.forEach(method => {
+        
+        const populateDatalist = (datalistElement, items) => {
+             datalistElement.innerHTML = '';
+            items.forEach(item => {
                 const option = document.createElement('option');
-                option.value = method;
-                paymentMethodsDatalist.appendChild(option);
+                option.value = item;
+                datalistElement.appendChild(option);
             });
         };
-
-        const addPaymentMethod = () => {
-            const newMethod = paymentMethodInput.value.trim();
-            if (newMethod) {
-                let methods = getPaymentMethods();
-                if (!methods.includes(newMethod)) {
-                    methods.push(newMethod);
-                    methods.sort();
-                    savePaymentMethods(methods);
-                    populatePaymentMethods();
-                    showMessage(`'${newMethod}' added as a payment method.`, 'success');
+        
+        const addItemToStorage = (key, inputElement, datalistElement, successMessage) => {
+            const newItem = inputElement.value.trim();
+            if (newItem) {
+                let items = getFromStorage(key);
+                if (!items.includes(newItem)) {
+                    items.push(newItem);
+                    items.sort();
+                    saveToStorage(key, items);
+                    populateDatalist(datalistElement, items);
+                    if(successMessage) showMessage(successMessage(newItem), 'success');
                 }
-                paymentMethodInput.value = newMethod;
             }
         };
+        
+        addPaymentBtn.addEventListener('click', () => {
+            addItemToStorage(PAYMENT_METHODS_KEY, paymentMethodInput, paymentMethodsDatalist, (item) => `'${item}' added as a payment method.`);
+        });
 
-        addPaymentBtn.addEventListener('click', addPaymentMethod);
 
         // --- Message Box Function ---
         const showMessage = (message, type = 'success') => {
@@ -262,14 +271,15 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // *** THIS IS THE CORRECTED LINE ***
             if (SCRIPT_URL === 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
                 showMessage('Error: Please configure the SCRIPT_URL in the HTML file.', 'error');
                 return;
             }
 
-            // Add new payment method if it doesn't exist
-            addPaymentMethod(); 
+            // Save new payment methods and projects to local storage
+            addItemToStorage(PAYMENT_METHODS_KEY, paymentMethodInput, paymentMethodsDatalist, (item) => `'${item}' added as a payment method.`);
+            addItemToStorage(PROJECTS_KEY, projectInput, projectsDatalist);
+
 
             // Show loading state
             submitBtn.disabled = true;
@@ -347,7 +357,8 @@
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             dateInput.valueAsDate = new Date();
-            populatePaymentMethods();
+            populateDatalist(paymentMethodsDatalist, getFromStorage(PAYMENT_METHODS_KEY, ['PenGems Expense Debit 3776', 'Personal Discover Debit 4924']));
+            populateDatalist(projectsDatalist, getFromStorage(PROJECTS_KEY, ['Hidden Hollow']));
             handleBusinessChange(); // Initial check on page load
         });
     </script>
